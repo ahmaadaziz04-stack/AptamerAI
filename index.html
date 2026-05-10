@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aptamer Biosensor AI</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            min-height: 100vh;
+            color: white;
+            padding: 20px;
+        }
+        .container { max-width: 900px; margin: 0 auto; }
+        h1 {
+            text-align: center;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            color: #00f5ff;
+            text-shadow: 0 0 20px #00f5ff;
+        }
+        .subtitle {
+            text-align: center;
+            color: #aaa;
+            margin-bottom: 30px;
+        }
+        .card {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+            backdrop-filter: blur(10px);
+        }
+        textarea {
+            width: 100%;
+            height: 120px;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid #00f5ff;
+            border-radius: 10px;
+            color: white;
+            padding: 15px;
+            font-size: 16px;
+            resize: none;
+        }
+        button {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(90deg, #00f5ff, #0080ff);
+            border: none;
+            border-radius: 10px;
+            color: white;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 15px;
+        }
+        button:hover { opacity: 0.9; transform: scale(1.01); }
+        .result-card {
+            display: none;
+            background: rgba(255,255,255,0.05);
+            border-radius: 15px;
+            padding: 25px;
+            margin-top: 20px;
+        }
+        .result-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-top: 15px;
+        }
+        .result-item {
+            background: rgba(0,0,0,0.3);
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+        }
+        .result-item .label { color: #aaa; font-size: 12px; }
+        .result-item .value { font-size: 24px; font-weight: bold; color: #00f5ff; }
+        .sensitivity-badge {
+            display: inline-block;
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 18px;
+            margin-top: 10px;
+        }
+        .loading { text-align: center; color: #00f5ff; display: none; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧬 Aptamer Biosensor AI</h1>
+        <p class="subtitle">Binding Affinity Prediction & Biosensor Analysis</p>
+
+        <div class="card">
+            <h3>Enter Aptamer Sequence:</h3>
+            <textarea id="sequence" placeholder="Example: ATCGGCTAGCTAGCTAGCTAGCTAGCTAGCT"></textarea>
+            <button onclick="analyze()">🔬 Analyze Aptamer</button>
+        </div>
+
+        <div class="loading" id="loading">⏳ Analyzing...</div>
+
+        <div class="result-card" id="results">
+            <h3>📊 Analysis Results:</h3>
+            <div class="result-grid">
+                <div class="result-item">
+                    <div class="label">Sequence Length</div>
+                    <div class="value" id="length">-</div>
+                </div>
+                <div class="result-item">
+                    <div class="label">GC Content</div>
+                    <div class="value" id="gc">-%</div>
+                </div>
+                <div class="result-item">
+                    <div class="label">Binding Score</div>
+                    <div class="value" id="binding">-</div>
+                </div>
+                <div class="result-item">
+                    <div class="label">Kd Value (nM)</div>
+                    <div class="value" id="kd">-</div>
+                </div>
+            </div>
+            <div style="text-align:center; margin-top:20px;">
+                <div class="label">Biosensor Sensitivity</div>
+                <div class="sensitivity-badge" id="sensitivity">-</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function analyze() {
+            const sequence = document.getElementById('sequence').value.trim();
+            if (!sequence) { alert('Please enter a sequence!'); return; }
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('results').style.display = 'none';
+            try {
+                const response = await fetch('/analyze', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ sequence })
+                });
+                const data = await response.json();
+                document.getElementById('length').textContent = data.length;
+                document.getElementById('gc').textContent = data.gc_content + '%';
+                document.getElementById('binding').textContent = data.binding_score;
+                document.getElementById('kd').textContent = data.kd_value + ' nM';
+                const badge = document.getElementById('sensitivity');
+                badge.textContent = data.sensitivity;
+                badge.style.background = data.color;
+                document.getElementById('results').style.display = 'block';
+            } catch(e) {
+                alert('Error! Make sure Flask server is running.');
+            }
+            document.getElementById('loading').style.display = 'none';
+        }
+    </script>
+</body>
+</html>
