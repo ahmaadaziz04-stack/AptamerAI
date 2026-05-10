@@ -1,23 +1,18 @@
 from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
-import numpy as np
-from Bio.SeqUtils import gc_fraction
-from Bio.Seq import Seq
-import json
+import os
 
-app = Flask(__name__)
+app = Flask(__name__, template_folder='templates')
 CORS(app)
 
 def analyze_aptamer(sequence):
-    seq = Seq(sequence.upper())
-    gc_content = gc_fraction(seq) * 100
-    length = len(seq)
-    
-    # Binding affinity prediction
+    sequence = sequence.upper()
+    length = len(sequence)
+    gc_count = sequence.count('G') + sequence.count('C')
+    gc_content = (gc_count / length) * 100 if length > 0 else 0
     binding_score = (gc_content * 0.4) + (length * 0.1)
-    kd_value = round(100 / binding_score, 4)
+    kd_value = round(100 / binding_score, 4) if binding_score > 0 else 0
     
-    # Biosensor threshold
     if kd_value < 1:
         sensitivity = "High"
         color = "green"
@@ -52,4 +47,5 @@ def analyze():
     return jsonify(result)
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port, debug=False)
