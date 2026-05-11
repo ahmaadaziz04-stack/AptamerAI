@@ -21,18 +21,13 @@
             color: #00f5ff;
             text-shadow: 0 0 20px #00f5ff;
         }
-        .subtitle {
-            text-align: center;
-            color: #aaa;
-            margin-bottom: 30px;
-        }
+        .subtitle { text-align: center; color: #aaa; margin-bottom: 30px; }
         .card {
             background: rgba(255,255,255,0.05);
             border: 1px solid rgba(255,255,255,0.1);
             border-radius: 15px;
             padding: 25px;
             margin-bottom: 20px;
-            backdrop-filter: blur(10px);
         }
         textarea {
             width: 100%;
@@ -57,14 +52,6 @@
             cursor: pointer;
             margin-top: 15px;
         }
-        button:hover { opacity: 0.9; transform: scale(1.01); }
-        .result-card {
-            display: none;
-            background: rgba(255,255,255,0.05);
-            border-radius: 15px;
-            padding: 25px;
-            margin-top: 20px;
-        }
         .result-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
@@ -77,9 +64,9 @@
             padding: 15px;
             text-align: center;
         }
-        .result-item .label { color: #aaa; font-size: 12px; }
-        .result-item .value { font-size: 24px; font-weight: bold; color: #00f5ff; }
-        .sensitivity-badge {
+        .label { color: #aaa; font-size: 12px; }
+        .value { font-size: 24px; font-weight: bold; color: #00f5ff; }
+        .badge {
             display: inline-block;
             padding: 8px 20px;
             border-radius: 20px;
@@ -87,23 +74,19 @@
             font-size: 18px;
             margin-top: 10px;
         }
-        .loading { text-align: center; color: #00f5ff; display: none; }
+        #results { display: none; margin-top: 20px; }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>🧬 Aptamer Biosensor AI</h1>
         <p class="subtitle">Binding Affinity Prediction & Biosensor Analysis</p>
-
         <div class="card">
             <h3>Enter Aptamer Sequence:</h3>
             <textarea id="sequence" placeholder="Example: ATCGGCTAGCTAGCTAGCTAGCTAGCTAGCT"></textarea>
             <button onclick="analyze()">🔬 Analyze Aptamer</button>
         </div>
-
-        <div class="loading" id="loading">⏳ Analyzing...</div>
-
-        <div class="result-card" id="results">
+        <div id="results" class="card">
             <h3>📊 Analysis Results:</h3>
             <div class="result-grid">
                 <div class="result-item">
@@ -112,7 +95,7 @@
                 </div>
                 <div class="result-item">
                     <div class="label">GC Content</div>
-                    <div class="value" id="gc">-%</div>
+                    <div class="value" id="gc">-</div>
                 </div>
                 <div class="result-item">
                     <div class="label">Binding Score</div>
@@ -125,36 +108,29 @@
             </div>
             <div style="text-align:center; margin-top:20px;">
                 <div class="label">Biosensor Sensitivity</div>
-                <div class="sensitivity-badge" id="sensitivity">-</div>
+                <div class="badge" id="sensitivity">-</div>
             </div>
         </div>
     </div>
-
     <script>
-        async function analyze() {
-            const sequence = document.getElementById('sequence').value.trim();
+        function analyze() {
+            const sequence = document.getElementById('sequence').value.trim().toUpperCase();
             if (!sequence) { alert('Please enter a sequence!'); return; }
-            document.getElementById('loading').style.display = 'block';
-            document.getElementById('results').style.display = 'none';
-            try {
-                const response = await fetch('/analyze', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ sequence })
-                });
-                const data = await response.json();
-                document.getElementById('length').textContent = data.length;
-                document.getElementById('gc').textContent = data.gc_content + '%';
-                document.getElementById('binding').textContent = data.binding_score;
-                document.getElementById('kd').textContent = data.kd_value + ' nM';
-                const badge = document.getElementById('sensitivity');
-                badge.textContent = data.sensitivity;
-                badge.style.background = data.color;
-                document.getElementById('results').style.display = 'block';
-            } catch(e) {
-                alert('Error! Make sure Flask server is running.');
-            }
-            document.getElementById('loading').style.display = 'none';
+            const length = sequence.length;
+            const gc = (sequence.split('').filter(c => c === 'G' || c === 'C').length / length) * 100;
+            const binding = (gc * 0.4) + (length * 0.1);
+            const kd = binding > 0 ? (100 / binding).toFixed(4) : 0;
+            let sensitivity, color;
+            if (kd < 1) { sensitivity = 'High 🟢'; color = '#00ff88'; }
+            else if (kd < 10) { sensitivity = 'Medium 🟡'; color = '#ffaa00'; }
+            else { sensitivity = 'Low 🔴'; color = '#ff4444'; }
+            document.getElementById('length').textContent = length;
+            document.getElementById('gc').textContent = gc.toFixed(2) + '%';
+            document.getElementById('binding').textContent = binding.toFixed(2);
+            document.getElementById('kd').textContent = kd + ' nM';
+            document.getElementById('sensitivity').textContent = sensitivity;
+            document.getElementById('sensitivity').style.background = color;
+            document.getElementById('results').style.display = 'block';
         }
     </script>
 </body>
